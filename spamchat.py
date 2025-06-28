@@ -9,12 +9,12 @@ def color_input(prompt, color=Fore.YELLOW):
 
 def banner():
     print(Fore.CYAN + "╔" + "═"*38 + "╗")
-    print(Fore.CYAN + "║" + Fore.MAGENTA + "   🖼️📩 oibanoi874 Dual Sender    " + Fore.CYAN + "║")
+    print(Fore.CYAN + "║" + Fore.MAGENTA + "   🖼️📩 oibanoi874 Spam Chat    " + Fore.CYAN + "║")
     print(Fore.CYAN + "╚" + "═"*38 + "╝\n")
 
 banner()
 
-cookie_input = color_input("👉 Nhập cookie (c_user=...; xs=...): ")
+cookie_input = color_input("👉 Nhập cookie: ")
 receiver_id = color_input("🎯 ID người nhận: ")
 message = color_input("💬 Tin nhắn muốn gửi: ")
 image_path = color_input("🖼️ Đường dẫn ảnh: ")
