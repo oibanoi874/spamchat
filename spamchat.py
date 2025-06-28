@@ -1,29 +1,34 @@
 import requests, time, os, random
 from bs4 import BeautifulSoup
-from colorama import Fore, Style, init
+from colorama import init, Fore, Style
 
 init(autoreset=True)
 
-def color_input(prompt, color=Fore.YELLOW):
-    return input(color + prompt + Style.RESET_ALL).strip()
+def rgb(r, g, b):
+    return f"\033[38;2;{r};{g};{b}m"
 
 def banner():
-    print(Fore.CYAN + "\n╔" + "═"*50 + "╗")
-    print(Fore.CYAN + "║" + Fore.MAGENTA + "         💥 Oinanoi874 Spam Chat 💥         " + Fore.CYAN + "║")
-    print(Fore.CYAN + "╠" + "═"*50 + "╣")
-    print(Fore.CYAN + "║" + Fore.GREEN + " 1. Gửi lần lượt tin nhắn" + " "*22 + Fore.CYAN + "║")
-    print(Fore.CYAN + "║" + Fore.GREEN + " 2. Gửi ngẫu nhiên tin nhắn" + " "*20 + Fore.CYAN + "║")
-    print(Fore.CYAN + "║" + Fore.GREEN + " 3. Gửi so le ảnh + tin nhắn" + " "*18 + Fore.CYAN + "║")
-    print(Fore.CYAN + "║" + Fore.GREEN + " 4. Gửi ảnh tuần tự" + " "*27 + Fore.CYAN + "║")
-    print(Fore.CYAN + "║" + Fore.GREEN + " 5. Gửi ảnh ngẫu nhiên" + " "*24 + Fore.CYAN + "║")
-    print(Fore.CYAN + "╚" + "═"*50 + "╝\n")
+    width = 56
+    print(rgb(255, 0, 255) + "╔" + "═" * width + "╗")
+    print(rgb(255, 200, 0) + "║" + " 💥 Oinanoi874 Spam Chat 💥 ".center(width) + "║")
+    print(rgb(255, 0, 255) + "╠" + "═" * width + "╣")
+    menu = [
+        "1. Gửi lần lượt tin nhắn",
+        "2. Gửi ngẫu nhiên tin nhắn",
+        "3. Gửi so le ảnh + tin nhắn",
+        "4. Gửi ảnh tuần tự",
+        "5. Gửi ảnh ngẫu nhiên"
+    ]
+    for m in menu:
+        print(rgb(0, 255, 255) + "║ " + rgb(0, 255, 100) + m.ljust(width - 2) + rgb(0, 255, 255) + "║")
+    print(rgb(255, 0, 255) + "╚" + "═" * width + "╝\n")
 
 banner()
 
-cookie_input = color_input("👉 Nhập cookie (full): ")
-receiver_id = color_input("🎯 ID người nhận: ")
-mode = color_input("📌 Nhập số chức năng (1 → 5): ")
-delay = float(color_input("⏱️ Độ trễ giữa các lần gửi (giây): "))
+cookie_input = input(rgb(255, 255, 0) + "👉 Nhập cookie (full): ").strip()
+receiver_id = input(rgb(0, 255, 255) + "🎯 ID người nhận: ").strip()
+mode = input(rgb(255, 100, 255) + "📌 Nhập số chức năng (1 → 5): ").strip()
+delay = float(input(rgb(100, 255, 255) + "⏱️ Độ trễ giữa các lần gửi (giây): ").strip())
 
 cookies = {}
 for part in cookie_input.split(';'):
@@ -39,11 +44,14 @@ if not c_user or not xs:
     exit()
 
 session = requests.Session()
-session.cookies.update({"c_user": c_user, "xs": xs})
-headers = {"User-Agent": "Mozilla/5.0"}
+session.cookies.update(cookies)
+headers = {
+    "User-Agent": "Mozilla/5.0 (Linux; Android 10)",
+    "Referer": f"https://mbasic.facebook.com/messages/read/?tid=user:{receiver_id}"
+}
 
 print(Fore.BLUE + "\n🔍 Đang lấy fb_dtsg...")
-res = session.get("https://mbasic.facebook.com/messages/", headers=headers)
+res = session.get(f"https://mbasic.facebook.com/messages/read/?tid=user:{receiver_id}", headers=headers)
 soup = BeautifulSoup(res.text, "html.parser")
 fb_dtsg_input = soup.find("input", {"name": "fb_dtsg"})
 
@@ -77,9 +85,6 @@ if mode in ['3', '4', '5']:
             print(Fore.RED + "❌ Không tìm thấy ảnh:", path)
 
 def send_image(image_path):
-    read_url = f"https://mbasic.facebook.com/messages/read/?tid=user:{receiver_id}"
-    res = session.get(read_url, headers=headers)
-    soup = BeautifulSoup(res.text, "html.parser")
     form = soup.find("form", {"method": "post", "enctype": "multipart/form-data"})
     if not form:
         print(Fore.RED + "❌ Không tìm thấy form gửi ảnh.")
@@ -92,60 +97,59 @@ def send_image(image_path):
     return res.status_code == 200
 
 def send_text(msg):
-    payload = {
-        "body": msg,
-        "tids": f"user:{receiver_id}",
-        "wwwupp": "C3",
-        "fb_dtsg": fb_dtsg,
-        "csid": "autospam",
-        "__a": 1,
-        "__req": "q",
-        "__user": c_user
-    }
-    res = session.post("https://www.facebook.com/messaging/send/", headers=headers, data=payload)
+    form = soup.find("form", {"method": "post"})
+    if not form:
+        print(Fore.RED + "❌ Không tìm thấy form gửi tin nhắn.")
+        return False
+    action = form.get("action")
+    send_url = "https://mbasic.facebook.com" + action
+    inputs = form.find_all("input")
+    data = {i.get("name"): i.get("value") for i in inputs if i.get("name")}
+    data["body"] = msg
+    res = session.post(send_url, headers=headers, data=data)
     return res.status_code == 200
 
-print(Fore.MAGENTA + "\n🚀 BẮT ĐẦU GỬI (Ctrl+C để dừng sớm)")
+print(rgb(200, 100, 255) + "\n🚀 BẮT ĐẦU GỬI (Ctrl+C để dừng sớm)")
 try:
     msg_count = 0
     img_count = 0
     while True:
-        if mode == '1':  # gửi lần lượt
+        if mode == '1':
             msg = messages[msg_count % len(messages)] if messages else "[empty]"
             ok = send_text(msg)
-            print(Fore.GREEN + f"✅ Gửi: {msg}" if ok else Fore.RED + "❌ Lỗi gửi tin")
+            print((Fore.GREEN if ok else Fore.RED) + f"Gửi: {msg}")
             msg_count += 1
 
-        elif mode == '2':  # gửi random
+        elif mode == '2':
             msg = random.choice(messages) if messages else "[empty]"
             ok = send_text(msg)
-            print(Fore.GREEN + f"✅ Random: {msg}" if ok else Fore.RED + "❌ Lỗi gửi tin")
+            print((Fore.GREEN if ok else Fore.RED) + f"Random: {msg}")
             msg_count += 1
 
-        elif mode == '3':  # gửi so le ảnh + tin nhắn
+        elif mode == '3':
             img = images[img_count % len(images)] if images else None
             if img:
                 img_ok = send_image(img)
-                print(Fore.GREEN + f"🖼️ Ảnh gửi: {img}" if img_ok else Fore.RED + "❌ Gửi ảnh lỗi")
+                print((Fore.GREEN if img_ok else Fore.RED) + f"Ảnh gửi: {img}")
                 img_count += 1
             if messages:
                 msg = messages[msg_count % len(messages)]
                 ok = send_text(msg)
-                print(Fore.GREEN + f"✅ Tin: {msg}" if ok else Fore.RED + "❌ Gửi tin lỗi")
+                print((Fore.GREEN if ok else Fore.RED) + f"Tin: {msg}")
                 msg_count += 1
 
-        elif mode == '4':  # gửi ảnh tuần tự
+        elif mode == '4':
             img = images[img_count % len(images)] if images else None
             if img:
                 img_ok = send_image(img)
-                print(Fore.GREEN + f"🖼️ Gửi ảnh: {img}" if img_ok else Fore.RED + "❌ Ảnh lỗi")
+                print((Fore.GREEN if img_ok else Fore.RED) + f"Gửi ảnh: {img}")
                 img_count += 1
 
-        elif mode == '5':  # gửi ảnh ngẫu nhiên
+        elif mode == '5':
             if images:
                 img = random.choice(images)
                 img_ok = send_image(img)
-                print(Fore.GREEN + f"🖼️ Gửi ảnh ngẫu nhiên: {img}" if img_ok else Fore.RED + "❌ Ảnh lỗi")
+                print((Fore.GREEN if img_ok else Fore.RED) + f"Gửi ảnh ngẫu nhiên: {img}")
                 img_count += 1
 
         else:
